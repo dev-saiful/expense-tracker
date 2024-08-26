@@ -14,10 +14,12 @@ import mergedTypeDefs from "./typeDefs/index.js";
 import mergedResolvers from "./resolvers/index.js";
 import { connectDB } from "./config/db.js";
 import { passportConfig } from "./config/passport.js";
-import e from "express";
+import job from "./cron.js";
 
 dotenv.config();
 passportConfig();
+
+job.start();
 
 const __dirname = path.resolve();
 
