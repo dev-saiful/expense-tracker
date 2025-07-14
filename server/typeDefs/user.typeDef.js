@@ -31,7 +31,7 @@ input SignUpInput{
 
 input LoginInput{
     username:String!
-    name:String!
+    password:String!
 }
 
 type LogoutResponse{

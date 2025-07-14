@@ -7,7 +7,7 @@ import passport from "passport";
 import session from "express-session";
 import connectMongo from "connect-mongodb-session";
 import { expressMiddleware } from "@apollo/server/express4";
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { ApolloServer } from "@apollo/server";
 import { buildContext } from "graphql-passport";
 import mergedTypeDefs from "./typeDefs/index.js";
@@ -29,59 +29,61 @@ const httpServer = http.createServer(app);
 // mongoDB session
 const mongoStore = connectMongo(session);
 const store = new mongoStore({
-  uri:process.env.MONGO_URI,
-  collection:"sessions",
+  uri: process.env.MONGO_URI,
+  collection: "sessions",
 });
 
-store.on("error",(err)=> console.log(err));
+store.on("error", (err) => console.log(err));
 
 // Session config
-app.use(session({
-  secret:process.env.SESSION_SECRET,
-  resave:false,
-  saveUninitialized:false,
-  cookie:{
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    httpOnly:true,
-    secure:true,
-    sameSite:"lax",
-  },
-  store:store,
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+      sameSite: "lax",
+    },
+    store: store,
+  })
+);
 
 // passport config
 app.use(passport.initialize());
 app.use(passport.session());
 
-
-
 app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-app.use(cors({
-  origin:"http//:localhost:3000",
-  credentials:true,
-}));
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
 const server = new ApolloServer({
-  typeDefs:mergedTypeDefs,
-  resolvers:mergedResolvers,
-  plugins:[ApolloServerPluginDrainHttpServer({httpServer})],
-})
- 
-await server.start();
-
-
- 
-app.use("/",expressMiddleware(server,{
-  context: async ({req,res})=> buildContext({req,res}),
-}));
-
-// setup for production
-app.use(express.static(path.join(__dirname,"client/dist")));
-app.get("*",(req,res)=>{
-res.sendFile(path.join(__dirname,"client/dist","index.html"));
+  typeDefs: mergedTypeDefs,
+  resolvers: mergedResolvers,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 
+await server.start();
+
+app.use(
+  "/",
+  expressMiddleware(server, {
+    context: async ({ req, res }) => buildContext({ req, res }),
+  })
+);
+
+// setup for production
+app.use(express.static(path.join(__dirname, "client/dist")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/dist", "index.html"));
+});
 
 await new Promise((resolve) => httpServer.listen({ port: 4000 }, resolve));
 await connectDB();
